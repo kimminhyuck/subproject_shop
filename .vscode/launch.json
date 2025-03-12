@@ -1,0 +1,14 @@
+{
+  "configurations": [
+    {
+      "type": "java",
+      "name": "Spring Boot-SubshopApplication<subshop>",
+      "request": "launch",
+      "cwd": "${workspaceFolder}",
+      "mainClass": "com.shop.subshop.SubshopApplication",
+      "projectName": "subshop",
+      "args": "",
+      "envFile": "${workspaceFolder}/.env"
+    }
+  ]
+}
