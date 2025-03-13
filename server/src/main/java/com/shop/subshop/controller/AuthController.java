@@ -1,124 +1,140 @@
 package com.shop.subshop.controller;
 
-import com.shop.subshop.model.User;
-import com.shop.subshop.repository.UserRepository;
-import com.shop.subshop.security.JwtUtil;
+import com.shop.subshop.service.AuthService;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import java.util.Map;
-import java.util.Optional;
 
+/**
+ * AuthController: 인증/인가와 관련된 회원 기능을 처리하는 컨트롤러
+ * (실제 비즈니스 로직은 AuthService에서 수행)
+ */
 @RestController
 @RequestMapping("/api/auth")
 public class AuthController {
 
-    private final UserRepository userRepository;
-    private final PasswordEncoder passwordEncoder;
-    private final JwtUtil jwtUtil;
+    private final AuthService authService;
 
-    public AuthController(UserRepository userRepository, PasswordEncoder passwordEncoder, JwtUtil jwtUtil) {
-        this.userRepository = userRepository;
-        this.passwordEncoder = passwordEncoder;
-        this.jwtUtil = jwtUtil;
+    // AuthService를 주입받아 사용
+    public AuthController(AuthService authService) {
+        this.authService = authService;
     }
 
-    /**
-     * ✅ 회원가입 API
+    /** =======================================
+     * 1) 회원가입 (POST /auth/register)
+     * =======================================
      */
     @PostMapping("/register")
     public ResponseEntity<?> registerUser(@RequestBody Map<String, String> request) {
-        String username = request.get("username");
-        String email = request.get("email");
-        String password = request.get("password");
-        String name = request.get("name");
-        String gender = request.get("gender");
-        String phone = request.get("phone");
-        String address = request.get("address");
-        String detailAddress = request.get("detailAddress"); // 상세 주소 필드 포함
-        String zipcode = request.get("zipcode");
-
-        // 이미 존재하는 이메일 확인
-        if (userRepository.findByEmail(email).isPresent()) {
-            return ResponseEntity.badRequest().body("이미 가입된 이메일입니다.");
-        }
-
-        // 비밀번호 암호화 후 저장
-        User newUser = User.builder()
-                .username(username)
-                .email(email)
-                .password(passwordEncoder.encode(password)) // 암호화 저장
-                .name(name)
-                .gender(gender)
-                .phone(phone)
-                .address(address)
-                .detailAddress(detailAddress) // 상세 주소 저장
-                .zipcode(zipcode)
-                .role("ROLE_USER") // 기본 ROLE_USER
-                .build();
-
-        userRepository.save(newUser);
-        return ResponseEntity.ok("회원가입 성공");
+        return authService.register(request);
     }
 
-    /**
-     * ✅ 로그인 API (JWT 발급)
+    /** =======================================
+     * 2) 로그인 (POST /auth/login)
+     * - JWT 발급 및 HttpOnly 쿠키 저장
+     * =======================================
      */
     @PostMapping("/login")
-    public ResponseEntity<?> loginUser(@RequestBody Map<String, String> request) {
-        String email = request.get("email");
-        String password = request.get("password");
-
-        Optional<User> userOptional = userRepository.findByEmail(email);
-
-        if (userOptional.isPresent()) {
-            User user = userOptional.get();
-
-            // 비밀번호 검증
-            if (passwordEncoder.matches(password, user.getPassword())) {
-                String token = jwtUtil.generateToken(user.getEmail());
-                return ResponseEntity.ok(Map.of("token", token));
-            }
-        }
-
-        return ResponseEntity.status(401).body("이메일 또는 비밀번호가 올바르지 않습니다.");
+    public ResponseEntity<?> loginUser(@RequestBody Map<String, String> request,
+                                       HttpServletResponse response) {
+        return authService.login(request, response);
     }
 
-    /**
-     * ✅ 사용자 정보 조회 API (JWT 필요)
+    /** =======================================
+     * 3) 로그아웃 (POST /auth/logout)
+     * - 쿠키 삭제
+     * =======================================
      */
-    @GetMapping("/me")
-    public ResponseEntity<?> getUserInfo(@RequestHeader("Authorization") String token) {
-        if (token == null || !token.startsWith("Bearer ")) {
-            return ResponseEntity.status(401).body("인증 토큰이 필요합니다.");
-        }
+    @PostMapping("/logout")
+    public ResponseEntity<?> logoutUser(HttpServletResponse response) {
+        return authService.logout(response);
+    }
 
-        String jwt = token.substring(7);
-        if (!jwtUtil.validateToken(jwt)) {
-            return ResponseEntity.status(401).body("유효하지 않은 토큰입니다.");
-        }
+    /** =======================================
+     * 4) 프로필 조회 (GET /auth/profile)
+     * =======================================
+     */
+    @GetMapping("/profile")
+    public ResponseEntity<?> getUserProfile(HttpServletRequest request) {
+        return authService.getProfile(request);
+    }
 
-        String email = jwtUtil.extractUsername(jwt);
-        Optional<User> userOptional = userRepository.findByEmail(email);
+    /** =======================================
+     * 5) 중복 확인 (POST /auth/check-duplicate)
+     * =======================================
+     */
+    @PostMapping("/check-duplicate")
+    public ResponseEntity<?> checkDuplicate(@RequestBody Map<String, String> data) {
+        return authService.checkDuplicate(data);
+    }
 
-        if (userOptional.isPresent()) {
-            User user = userOptional.get();
-            return ResponseEntity.ok(Map.ofEntries(
-                Map.entry("id", user.getId()),
-                Map.entry("username", user.getUsername()),
-                Map.entry("email", user.getEmail()),
-                Map.entry("name", user.getName()),
-                Map.entry("gender", user.getGender()),
-                Map.entry("phone", user.getPhone()),
-                Map.entry("address", user.getAddress()),
-                Map.entry("detailAddress", user.getDetailAddress()), // 상세 주소 포함
-                Map.entry("zipcode", user.getZipcode()),
-                Map.entry("mileage", user.getMileage()),
-                Map.entry("role", user.getRole())
-            ));
-        }
+    /** =======================================
+     * 6) 프로필 수정 (PUT /auth/profile/update)
+     * =======================================
+     */
+    @PutMapping("/profile/update")
+    public ResponseEntity<?> updateProfile(HttpServletRequest request,
+                                           @RequestBody Map<String, String> userData) {
+        return authService.updateProfile(request, userData);
+    }
 
-        return ResponseEntity.status(404).body("사용자를 찾을 수 없습니다.");
+    /** =======================================
+     * 7) 비밀번호 변경 (PUT /auth/change-password)
+     * =======================================
+     */
+    @PutMapping("/change-password")
+    public ResponseEntity<?> changePassword(HttpServletRequest request,
+                                            @RequestBody Map<String, String> passwordData) {
+        return authService.changePassword(request, passwordData);
+    }
+
+    /** =======================================
+     * 8) 비밀번호 찾기 (POST /auth/forgot-password)
+     * =======================================
+     */
+    @PostMapping("/forgot-password")
+    public ResponseEntity<?> forgotPassword(@RequestBody Map<String, String> data) {
+        return authService.forgotPassword(data);
+    }
+
+    /** =======================================
+     * 9) 비밀번호 재설정 (POST /auth/reset-password)
+     * =======================================
+     */
+    @PostMapping("/reset-password")
+    public ResponseEntity<?> resetPassword(@RequestBody Map<String, String> data) {
+        return authService.resetPassword(data);
+    }
+
+    /** =======================================
+     * 10) 리프레시 토큰 (POST /auth/refresh-token)
+     * - 액세스 토큰 만료 시 재발급 (예시)
+     * =======================================
+     */
+    @PostMapping("/refresh-token")
+    public ResponseEntity<?> refreshToken(HttpServletRequest request,
+                                          HttpServletResponse response) {
+        return authService.refreshToken(request, response);
+    }
+
+    /** =======================================
+     * 11) 아이디 찾기 (POST /auth/find-userid)
+     * =======================================
+     */
+    @PostMapping("/find-userid")
+    public ResponseEntity<?> findUserId(@RequestBody Map<String, String> data) {
+        return authService.findUserId(data);
+    }
+
+    /** =======================================
+     * 12) 인증 코드 확인 (POST /auth/verify-code)
+     * =======================================
+     */
+    @PostMapping("/verify-code")
+    public ResponseEntity<?> verifyCode(@RequestBody Map<String, String> data) {
+        return authService.verifyCode(data);
     }
 }
