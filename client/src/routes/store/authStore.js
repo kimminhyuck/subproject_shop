@@ -1,5 +1,8 @@
 import {create} from 'zustand'
-import {authAPI} from '../api/auth'
+import {authAPI} from '../../api/auth'
+import {useNotificationStore} from './notificationStore'
+import {persist} from 'zustand/middleware'
+import {connectSocket} from '../../api/socket/socket'
 
 export const useAuthStore = create(
   persist(

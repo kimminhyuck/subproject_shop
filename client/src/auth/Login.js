@@ -1,7 +1,7 @@
 import React, {useEffect, useState} from 'react'
 import {useNavigate, useLocation} from 'react-router-dom'
-import {authAPI} from '../../api/auth'
-import {useAuthStore} from '../../store/authStore'
+import {authAPI} from '../api/auth'
+import {useAuthStore} from '../routes/store/authStore'
 import {
   TextField,
   Button,
@@ -12,7 +12,6 @@ import {
   FormControlLabel,
   Checkbox
 } from '@mui/material'
-import SocialLoginButtons from '../../components/SocialLoginButtons' // 소셜 로그인 버튼
 import CssBaseline from '@mui/material/CssBaseline'
 import Stack from '@mui/material/Stack'
 import AppTheme from './style/theme/AppTheme'
@@ -245,8 +244,6 @@ const Login = () => {
                   </Link>
                 </Box>
               </Box>
-
-              <SocialLoginButtons />
             </SignInCard>
           </Stack>
         </Stack>
