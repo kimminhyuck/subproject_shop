@@ -1,23 +1,23 @@
-import React, {useEffect, useState} from 'react';
-import {useLocation} from 'react-router-dom';
-import {} from '@mui/material';
-import CssBaseline from '@mui/material/CssBaseline';
-import Stack from '@mui/material/Stack';
-import AppTheme from './style/theme/AppTheme';
-import ColorModeSelect from './style/theme/ColorModeSelect';
-import Content from './style/components/Content';
-import RegisterCard from './style/components/RegisterCard';
+import React, {useEffect, useState} from 'react'
+import {useLocation} from 'react-router-dom'
+import {} from '@mui/material'
+import CssBaseline from '@mui/material/CssBaseline'
+import Stack from '@mui/material/Stack'
+import AppTheme from './style/theme/AppTheme'
+import ColorModeSelect from './style/theme/ColorModeSelect'
+import Content from './style/components/Content'
+import RegisterCard from './style/components/RegisterCard'
 
 const Register = () => {
-  const location = useLocation();
-  const [, setErrorMessage] = useState('');
+  const location = useLocation()
+  const [, setErrorMessage] = useState('')
 
   useEffect(() => {
-    const params = new URLSearchParams(location.search);
+    const params = new URLSearchParams(location.search)
     if (params.get('error') === 'duplicate') {
-      setErrorMessage('이미 가입된 회원입니다. 기존 계정으로 로그인해주세요.');
+      setErrorMessage('이미 가입된 회원입니다. 기존 계정으로 로그인해주세요.')
     }
-  }, [location]);
+  }, [location])
 
   // useEffect(() => {
   //   const savedUserId = localStorage.getItem('savedUserId');
@@ -129,7 +129,7 @@ const Register = () => {
         </Stack>
       </Stack>
     </AppTheme>
-  );
-};
+  )
+}
 
-export default Register;
+export default Register

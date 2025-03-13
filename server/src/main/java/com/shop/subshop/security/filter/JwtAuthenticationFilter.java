@@ -50,6 +50,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                                     HttpServletResponse response,
                                     FilterChain filterChain) throws ServletException, IOException {
         String token = null;
+        String refreshToken = null;
 
         // 1. Authorization 헤더에서 토큰 추출 ("Bearer " 접두어 사용)
         String authHeader = request.getHeader("Authorization");
@@ -62,14 +63,32 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     if ("accessToken".equals(cookie.getName())) {
                         token = cookie.getValue();
                         break;
+                    } else if ("refreshToken".equals(cookie.getName())) {
+                        refreshToken = cookie.getValue();
                     }
                 }
             }
         }
 
-        // 3. 토큰이 존재하고 SecurityContext에 인증 정보가 없는 경우 처리
+        // 3. 액세스 토큰이 만료된 경우 리프레시 토큰을 사용하여 새 액세스 토큰을 발급
+        if (token != null && !jwtUtil.validateToken(token)) {
+            if (refreshToken != null && jwtUtil.validateToken(refreshToken)) {
+                String username = jwtUtil.extractUsername(refreshToken);
+                // 새 액세스 토큰 발급
+                String newAccessToken = jwtUtil.generateToken(username);
+
+                // 새로운 액세스 토큰을 HttpOnly 쿠키로 저장
+                jwtUtil.setJwtCookie(response, newAccessToken);
+
+                // 새 토큰을 헤더에 포함시켜서 요청을 계속 처리하도록 함
+                response.setHeader("Authorization", "Bearer " + newAccessToken);
+                token = newAccessToken;
+            }
+        }
+
+        // 4. 유효한 토큰이 있으면 SecurityContext에 인증 설정
         if (token != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-            // 토큰 유효성 검증
+            // 유효한 액세스 토큰이라면 인증 처리
             if (jwtUtil.validateToken(token)) {
                 // 토큰에서 사용자 이름 추출
                 String username = jwtUtil.extractUsername(token);
@@ -85,7 +104,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             }
         }
 
-        // 4. 다음 필터로 요청 전달
+        // 5. 다음 필터로 요청 전달
         filterChain.doFilter(request, response);
     }
 }

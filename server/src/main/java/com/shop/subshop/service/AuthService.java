@@ -1,6 +1,8 @@
 package com.shop.subshop.service;
 
+import com.shop.subshop.model.RefreshToken;
 import com.shop.subshop.model.User;
+import com.shop.subshop.repository.RefreshTokenRepository;
 import com.shop.subshop.repository.UserRepository;
 import com.shop.subshop.security.JwtUtil;
 import org.springframework.http.ResponseEntity;
@@ -17,13 +19,16 @@ import java.util.Optional;
 public class AuthService {
 
     private final UserRepository userRepository;
+    private final RefreshTokenRepository refreshTokenRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
 
     public AuthService(UserRepository userRepository,
+                       RefreshTokenRepository refreshTokenRepository,
                        PasswordEncoder passwordEncoder,
                        JwtUtil jwtUtil) {
         this.userRepository = userRepository;
+        this.refreshTokenRepository = refreshTokenRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtUtil = jwtUtil;
     }
@@ -73,21 +78,31 @@ public class AuthService {
     public ResponseEntity<?> login(Map<String, String> request, HttpServletResponse response) {
         String email = request.get("email");
         String password = request.get("password");
-
+    
         Optional<User> userOptional = userRepository.findByEmail(email);
         if (userOptional.isPresent()) {
             User user = userOptional.get();
             if (passwordEncoder.matches(password, user.getPassword())) {
                 // JWT 생성: 사용자 이메일과 역할 포함
-                String token = jwtUtil.generateToken(user.getEmail(), user.getRole());
-                // JWT를 HttpOnly 쿠키로 저장
-                jwtUtil.setJwtCookie(response, token);
-                return ResponseEntity.ok(Map.of("token", token));
+                String accessToken = jwtUtil.generateToken(user.getEmail(), user.getRole());
+                String refreshToken = jwtUtil.generateRefreshToken(user.getEmail());
+    
+                // 리프레시 토큰을 DB에 저장
+                RefreshToken refreshTokenEntity = new RefreshToken();
+                refreshTokenEntity.setToken(refreshToken);
+                refreshTokenEntity.setEmail(user.getEmail());
+                refreshTokenEntity.setExpiryDate(jwtUtil.getRefreshTokenExpirationDate()); // 만료일 추가
+                refreshTokenRepository.save(refreshTokenEntity);  // DB에 저장 확인
+    
+                // JWT와 리프레시 토큰을 HttpOnly 쿠키로 저장
+                jwtUtil.setJwtCookie(response, accessToken);
+                jwtUtil.setRefreshTokenCookie(response, refreshToken);
+    
+                return ResponseEntity.ok(Map.of("accessToken", accessToken, "refreshToken", refreshToken));
             }
         }
         return ResponseEntity.status(401).body("이메일 또는 비밀번호가 올바르지 않습니다.");
     }
-
     /**
      * 로그아웃 처리
      * HttpServletResponse를 이용하여 accessToken 쿠키를 만료시킵니다.
