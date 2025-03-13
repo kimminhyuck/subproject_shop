@@ -72,8 +72,8 @@ public class JwtUtil {
     /**
      * JWT 토큰을 HttpOnly 쿠키에 저장하는 예시 메서드
      */
-    public void setJwtCookie(javax.servlet.http.HttpServletResponse response, String token) {
-        javax.servlet.http.Cookie cookie = new javax.servlet.http.Cookie("accessToken", token);
+    public void setJwtCookie(jakarta.servlet.http.HttpServletResponse response, String token) {
+        jakarta.servlet.http.Cookie cookie = new jakarta.servlet.http.Cookie("accessToken", token);
         cookie.setHttpOnly(true);
         cookie.setPath("/");
         cookie.setMaxAge((int)(EXPIRATION_TIME / 1000));

@@ -4,8 +4,8 @@ import com.shop.subshop.service.AuthService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import java.util.Map;
 
 /**
@@ -18,7 +18,6 @@ public class AuthController {
 
     private final AuthService authService;
 
-    // AuthService를 주입받아 사용
     public AuthController(AuthService authService) {
         this.authService = authService;
     }
@@ -26,6 +25,7 @@ public class AuthController {
     /** =======================================
      * 1) 회원가입 (POST /auth/register)
      * =======================================
+     * 클라이언트에서 전달받은 JSON -> Map<String, String>
      */
     @PostMapping("/register")
     public ResponseEntity<?> registerUser(@RequestBody Map<String, String> request) {
@@ -36,10 +36,14 @@ public class AuthController {
      * 2) 로그인 (POST /auth/login)
      * - JWT 발급 및 HttpOnly 쿠키 저장
      * =======================================
+     * request: 로그인 정보 (이메일, 비밀번호 등)
+     * response: 서블릿 응답 객체 (자동 주입, @RequestBody 아님)
      */
     @PostMapping("/login")
-    public ResponseEntity<?> loginUser(@RequestBody Map<String, String> request,
-                                       HttpServletResponse response) {
+    public ResponseEntity<?> loginUser(
+            @RequestBody Map<String, String> request,
+            HttpServletResponse response
+    ) {
         return authService.login(request, response);
     }
 
@@ -56,6 +60,7 @@ public class AuthController {
     /** =======================================
      * 4) 프로필 조회 (GET /auth/profile)
      * =======================================
+     * request: 서블릿 요청 객체 (쿠키나 헤더에서 JWT 추출)
      */
     @GetMapping("/profile")
     public ResponseEntity<?> getUserProfile(HttpServletRequest request) {
@@ -74,20 +79,26 @@ public class AuthController {
     /** =======================================
      * 6) 프로필 수정 (PUT /auth/profile/update)
      * =======================================
+     * request: JWT 추출, userData: 수정할 프로필 정보
      */
     @PutMapping("/profile/update")
-    public ResponseEntity<?> updateProfile(HttpServletRequest request,
-                                           @RequestBody Map<String, String> userData) {
+    public ResponseEntity<?> updateProfile(
+            HttpServletRequest request,
+            @RequestBody Map<String, String> userData
+    ) {
         return authService.updateProfile(request, userData);
     }
 
     /** =======================================
      * 7) 비밀번호 변경 (PUT /auth/change-password)
      * =======================================
+     * request: JWT 추출, passwordData: {"newPassword":"..."}
      */
     @PutMapping("/change-password")
-    public ResponseEntity<?> changePassword(HttpServletRequest request,
-                                            @RequestBody Map<String, String> passwordData) {
+    public ResponseEntity<?> changePassword(
+            HttpServletRequest request,
+            @RequestBody Map<String, String> passwordData
+    ) {
         return authService.changePassword(request, passwordData);
     }
 
@@ -115,8 +126,10 @@ public class AuthController {
      * =======================================
      */
     @PostMapping("/refresh-token")
-    public ResponseEntity<?> refreshToken(HttpServletRequest request,
-                                          HttpServletResponse response) {
+    public ResponseEntity<?> refreshToken(
+            HttpServletRequest request,
+            HttpServletResponse response
+    ) {
         return authService.refreshToken(request, response);
     }
 

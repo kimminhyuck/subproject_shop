@@ -7,12 +7,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import javax.servlet.http.Cookie;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import java.util.Map;
 import java.util.Optional;
-import java.util.List;
 
 @Service
 public class AuthService {
@@ -95,9 +94,9 @@ public class AuthService {
      */
     public ResponseEntity<?> logout(HttpServletResponse response) {
         Cookie cookie = new Cookie("accessToken", null);
-        cookie.setMaxAge(0);
-        cookie.setPath("/");
-        response.addCookie(cookie);
+        cookie.setMaxAge(0); // 쿠키 만료
+        cookie.setPath("/"); // 전체 경로에서 유효
+        response.addCookie(cookie); // 쿠키 추가
         return ResponseEntity.ok("로그아웃 성공");
     }
 
