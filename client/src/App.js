@@ -1,6 +1,5 @@
 import React from 'react'
 import {BrowserRouter as Router, Routes, Route} from 'react-router-dom'
-import {Dashboard, Auth} from '@/layouts'
 import Login from './auth/Login'
 import Register from './auth/Register'
 import ForgotPassword from './auth/ForgotPassword'
@@ -11,10 +10,7 @@ const App = () => {
     <Router>
       <Routes>
         <Route path="/login" element={<Login />} />
-        <Route path="/dashboard/*" element={<Dashboard />} />
-        <Route path="/auth/*" element={<Auth />} />
         <Route path="/register" element={<Register />} />
-        <Route path="*" element={<Navigate to="/dashboard/home" replace />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
       </Routes>
